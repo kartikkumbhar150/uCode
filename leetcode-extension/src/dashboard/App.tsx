@@ -15,6 +15,7 @@ import JournalView from "./JournalView";
 import RevisionView from "./RevisionView";
 import SettingsView from "./SettingsView";
 import AuthPage from "./AuthPage";
+import LandingPage from "./LandingPage";
 import { getToken, getStoredUser, logout } from "../services/storage-adapter";
 import type { StoredUser } from "../services/storage-adapter";
 
@@ -79,7 +80,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <AuthPage onSuccess={(u) => setUser(u)} />;
+    return <LandingPage onSuccess={(u) => setUser(u)} />;
   }
 
   return (

@@ -7,10 +7,11 @@ import type { StoredUser } from "../services/storage-adapter";
 
 interface AuthPageProps {
   onSuccess: (user: StoredUser) => void;
+  initialMode?: "login" | "signup";
 }
 
-export default function AuthPage({ onSuccess }: AuthPageProps) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+export default function AuthPage({ onSuccess, initialMode = "login" }: AuthPageProps) {
+  const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
