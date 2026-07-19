@@ -13,12 +13,13 @@ export default defineConfig({
         popup: resolve(__dirname, "popup.html"),
         dashboard: resolve(__dirname, "dashboard.html"),
         background: resolve(__dirname, "src/background/background.ts"),
-        content: resolve(__dirname, "src/content/content.ts"),
       },
       output: {
         entryFileNames: "[name].js",
         chunkFileNames: "chunks/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash][extname]",
+        // background.js uses "type":"module" in manifest, ES output is fine
+        format: "es",
       },
     },
   },
