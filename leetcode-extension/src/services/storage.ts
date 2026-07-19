@@ -1,8 +1,9 @@
 // ============================================================
-// storage.ts — Chrome Storage wrapper
-// All data is stored in chrome.storage.local (extension) or
-// localStorage (web/Vercel build) via the storage adapter.
+// storage.ts — Data layer
+// ALL data is fetched/stored in Neon DB via the API.
+// Only the JWT token and problem timer use local storage.
 // ============================================================
+import { problemsApi, revisionsApi, journalsApi, settingsApi } from "./api-client";
 import { adapterGet, adapterSet } from "./storage-adapter";
 
 export interface ProblemRecord {
@@ -62,34 +63,19 @@ export interface ContestEntry {
   date: number;
 }
 
-// ─── Keys ────────────────────────────────────────────────────
-const KEYS = {
-  PROBLEMS: "leetsync_problems",
-  REVISIONS: "leetsync_revisions",
-  JOURNALS: "leetsync_journals",
-  SETTINGS: "leetsync_settings",
-  CONTESTS: "leetsync_contests",
-  START_TIME: "leetsync_problem_start_time",
-};
-
-// ─── Generic helpers ─────────────────────────────────────────
-async function get<T>(key: string, fallback: T): Promise<T> {
-  return adapterGet(key, fallback);
-}
-
-async function set<T>(key: string, value: T): Promise<void> {
-  return adapterSet(key, value);
-}
-
-// ─── Problems ────────────────────────────────────────────────
+// ─── Problems (from Neon DB via API) ─────────────────────────
 export async function getProblems(): Promise<Record<string, ProblemRecord>> {
-  return get<Record<string, ProblemRecord>>(KEYS.PROBLEMS, {});
+  try {
+    const { problems } = await problemsApi.getAll();
+    return problems as Record<string, ProblemRecord>;
+  } catch (err) {
+    console.warn("[LeetSync] Failed to fetch problems from API, returning empty:", err);
+    return {};
+  }
 }
 
 export async function saveProblem(problem: ProblemRecord): Promise<void> {
-  const problems = await getProblems();
-  problems[problem.id] = problem;
-  await set(KEYS.PROBLEMS, problems);
+  await problemsApi.upsert(problem);
 }
 
 export async function getProblemById(id: string): Promise<ProblemRecord | null> {
@@ -97,15 +83,19 @@ export async function getProblemById(id: string): Promise<ProblemRecord | null> 
   return problems[id] ?? null;
 }
 
-// ─── Revisions ───────────────────────────────────────────────
+// ─── Revisions (from Neon DB via API) ────────────────────────
 export async function getRevisions(): Promise<Record<string, RevisionEntry>> {
-  return get<Record<string, RevisionEntry>>(KEYS.REVISIONS, {});
+  try {
+    const { revisions } = await revisionsApi.getAll();
+    return revisions as Record<string, RevisionEntry>;
+  } catch (err) {
+    console.warn("[LeetSync] Failed to fetch revisions from API:", err);
+    return {};
+  }
 }
 
 export async function saveRevision(entry: RevisionEntry): Promise<void> {
-  const revisions = await getRevisions();
-  revisions[entry.problemId] = entry;
-  await set(KEYS.REVISIONS, revisions);
+  await revisionsApi.upsert(entry);
 }
 
 export async function getTodayRevisions(): Promise<RevisionEntry[]> {
@@ -121,9 +111,15 @@ export async function getTodayRevisions(): Promise<RevisionEntry[]> {
   });
 }
 
-// ─── Journals ────────────────────────────────────────────────
+// ─── Journals (from Neon DB via API) ─────────────────────────
 export async function getJournals(): Promise<Record<string, DayJournal>> {
-  return get<Record<string, DayJournal>>(KEYS.JOURNALS, {});
+  try {
+    const { journals } = await journalsApi.getAll();
+    return journals as Record<string, DayJournal>;
+  } catch (err) {
+    console.warn("[LeetSync] Failed to fetch journals from API:", err);
+    return {};
+  }
 }
 
 export async function addToJournal(
@@ -131,52 +127,61 @@ export async function addToJournal(
   problemId: string,
   timeSpentMs: number
 ): Promise<void> {
+  // Fetch existing journal for this date, then upsert
   const journals = await getJournals();
-  if (!journals[dateStr]) {
-    journals[dateStr] = { date: dateStr, problemIds: [], totalTimeMs: 0 };
+  const existing = journals[dateStr] || { date: dateStr, problemIds: [], totalTimeMs: 0 };
+  if (!existing.problemIds.includes(problemId)) {
+    existing.problemIds.push(problemId);
   }
-  if (!journals[dateStr].problemIds.includes(problemId)) {
-    journals[dateStr].problemIds.push(problemId);
-  }
-  journals[dateStr].totalTimeMs += timeSpentMs;
-  await set(KEYS.JOURNALS, journals);
+  existing.totalTimeMs += timeSpentMs;
+  await journalsApi.upsert(existing);
 }
 
-// ─── Settings ─────────────────────────────────────────────────
+// ─── Settings (from Neon DB via API) ──────────────────────────
 export async function getSettings(): Promise<AppSettings> {
-  return get<AppSettings>(KEYS.SETTINGS, {
-    githubToken: "",
-    githubUsername: "",
-    githubRepo: "leetcode-solutions",
-    openaiKey: "",
-    groqKey: "",
-    aiProvider: "none",
-  });
+  try {
+    const { settings } = await settingsApi.get();
+    return settings as AppSettings;
+  } catch (err) {
+    console.warn("[LeetSync] Failed to fetch settings from API:", err);
+    return {
+      githubToken: "",
+      githubUsername: "",
+      githubRepo: "leetcode-solutions",
+      openaiKey: "",
+      groqKey: "",
+      aiProvider: "none",
+    };
+  }
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {
-  await set(KEYS.SETTINGS, settings);
+  await settingsApi.update(settings);
 }
 
-// ─── Contests ─────────────────────────────────────────────────
+// ─── Contests (local-only for now — no API endpoint) ──────────
+const CONTEST_KEY = "leetsync_contests";
+
 export async function getContests(): Promise<ContestEntry[]> {
-  return get<ContestEntry[]>(KEYS.CONTESTS, []);
+  return adapterGet<ContestEntry[]>(CONTEST_KEY, []);
 }
 
 export async function addContest(entry: ContestEntry): Promise<void> {
   const contests = await getContests();
   contests.push(entry);
-  await set(KEYS.CONTESTS, contests);
+  await adapterSet(CONTEST_KEY, contests);
 }
 
-// ─── Problem Timer ────────────────────────────────────────────
+// ─── Problem Timer (local-only — must work offline in extension) ─
+const START_TIME_KEY = "leetsync_problem_start_time";
+
 export async function recordProblemStart(slug: string): Promise<void> {
-  await set(KEYS.START_TIME, { slug, startTime: Date.now() });
+  await adapterSet(START_TIME_KEY, { slug, startTime: Date.now() });
 }
 
 export async function getProblemElapsed(slug: string): Promise<number> {
-  const data = await get<{ slug: string; startTime: number } | null>(
-    KEYS.START_TIME,
+  const data = await adapterGet<{ slug: string; startTime: number } | null>(
+    START_TIME_KEY,
     null
   );
   if (!data || data.slug !== slug) return 0;

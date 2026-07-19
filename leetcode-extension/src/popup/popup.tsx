@@ -132,7 +132,7 @@ function AuthenticatedPopup({ user, onLogout }: { user: StoredUser; onLogout: ()
   }, []);
 
   function openDashboard() {
-    chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
+    chrome.tabs.create({ url: "https://leetcode-extension.vercel.app" });
   }
 
   return (
