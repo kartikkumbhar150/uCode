@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, BookOpen, BarChart3,
   Calendar, Settings, Zap,
-  RefreshCw, Sparkles, LogOut, User
+  RefreshCw, LogOut, User
 } from "lucide-react";
 import type { Stats } from "../services/analytics";
 import { computeStats, formatMs } from "../services/analytics";
@@ -18,9 +18,7 @@ import AuthPage from "./AuthPage";
 import { getToken, getStoredUser, logout } from "../services/storage-adapter";
 import type { StoredUser } from "../services/storage-adapter";
 
-const IS_WEB =
-  typeof chrome === "undefined" ||
-  typeof chrome.storage === "undefined";
+
 
 type Tab =
   | "overview"
@@ -86,38 +84,6 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-
-      {/* ── Demo Banner (web only) ───────────────────────────── */}
-      {IS_WEB && (
-        <div
-          style={{
-            background: "linear-gradient(90deg, #92400e 0%, #b45309 50%, #92400e 100%)",
-            padding: "0.45rem 1rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            fontSize: 12,
-            fontWeight: 600,
-            color: "#fef3c7",
-            letterSpacing: "0.02em",
-            borderBottom: "1px solid rgba(245,158,11,0.3)",
-            flexShrink: 0,
-          }}
-        >
-          <Sparkles size={13} />
-          Live Demo — Data is stored in your browser&apos;s localStorage.
-          Install the Chrome Extension to sync real LeetCode submissions to GitHub.
-          <a
-            href="https://github.com/topics/leetsync"
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "#fcd34d", marginLeft: 6 }}
-          >
-            Get Extension →
-          </a>
-        </div>
-      )}
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
       {/* ── Sidebar ────────────────────────────────────────── */}
