@@ -59,7 +59,19 @@ async function apiFetch<T>(
   });
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+
+  // Guard against HTML error pages (e.g. 404 from Vercel before deploy)
+  let data: Record<string, string> = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(
+      res.ok
+        ? "Invalid response from server"
+        : `Server error ${res.status} — backend may still be deploying, try again shortly.`
+    );
+  }
+
   if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
   return data as T;
 }
