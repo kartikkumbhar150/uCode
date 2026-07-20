@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, Mail, Lock, User, Eye, EyeOff, AlertCircle, Loader } from "lucide-react";
-import { authApi } from "../services/api-client";
+import { clarioAuth } from "../services/clario-api";
 import { setToken, setStoredUser } from "../services/storage-adapter";
 import type { StoredUser } from "../services/storage-adapter";
 
@@ -15,6 +15,7 @@ export default function AuthPage({ onSuccess, initialMode = "login" }: AuthPageP
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [fullName, setFullName] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,14 +25,20 @@ export default function AuthPage({ onSuccess, initialMode = "login" }: AuthPageP
     setError("");
     setLoading(true);
     try {
-      const result =
-        mode === "login"
-          ? await authApi.login(email, password)
-          : await authApi.signup(email, password, username || undefined);
-
-      await setToken(result.token);
-      await setStoredUser(result.user);
-      onSuccess(result.user);
+      if (mode === "login") {
+        const result = await clarioAuth.login(email, password);
+        await setToken(result.token);
+        const user: StoredUser = { id: result._id, email: result.email, name: result.name, username: result.name };
+        await setStoredUser(user);
+        onSuccess(user);
+      } else {
+        const name = fullName.trim() || username.trim() || email.split("@")[0];
+        const result = await clarioAuth.register(name, email, password);
+        await setToken(result.token);
+        const user: StoredUser = { id: result._id, email: result.email, name: result.name, username: result.name };
+        await setStoredUser(user);
+        onSuccess(user);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -170,18 +177,20 @@ export default function AuthPage({ onSuccess, initialMode = "login" }: AuthPageP
             <AnimatePresence>
               {mode === "signup" && (
                 <motion.div
-                  key="username"
+                  key="signup-fields"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
+                  style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}
                 >
                   <InputField
                     icon={<User size={14} />}
                     type="text"
-                    placeholder="Username (optional)"
-                    value={username}
-                    onChange={setUsername}
-                    autoComplete="username"
+                    placeholder="Full name"
+                    value={fullName}
+                    onChange={setFullName}
+                    autoComplete="name"
+                    required
                   />
                 </motion.div>
               )}

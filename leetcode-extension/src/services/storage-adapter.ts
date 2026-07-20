@@ -66,9 +66,10 @@ export async function clearToken(): Promise<void> {
 }
 
 export interface StoredUser {
-  id: number;
+  id: number | string;
   email: string;
   username?: string;
+  name?: string;
 }
 
 export async function getStoredUser(): Promise<StoredUser | null> {
