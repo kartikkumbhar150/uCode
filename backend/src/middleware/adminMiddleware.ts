@@ -1,25 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 
 // Hardcoded admin credentials for DSA sheet management
-const ADMIN_USERNAME = 'admin';
+const ADMIN_EMAIL    = 'admin@leetsync.com';
 const ADMIN_PASSWORD = 'kartikADM15';
 
 /**
- * Middleware: checks for admin credentials in the request header.
- * Clients send:  X-Admin-Key: admin:kartikADM15  (base64 encoded or plain)
- * OR a query param:  ?adminKey=admin:kartikADM15
+ * Middleware: checks for admin credentials in X-Admin-Key header.
+ * Format: X-Admin-Key: admin@leetsync.com:kartikADM15
  */
 export const adminOnly = (req: Request, res: Response, next: NextFunction) => {
-  // Accept from header: X-Admin-Key: <username>:<password>
   const headerKey = req.headers['x-admin-key'] as string | undefined;
-  // Accept from body: { adminUsername, adminPassword }
-  const { adminUsername, adminPassword } = req.body || {};
 
-  const validFromHeader =
-    headerKey === `${ADMIN_USERNAME}:${ADMIN_PASSWORD}`;
+  // Allow: "email:password" in header
+  const validFromHeader = headerKey === `${ADMIN_EMAIL}:${ADMIN_PASSWORD}`;
 
+  // Fallback: body fields { adminEmail, adminPassword }
+  const { adminEmail, adminPassword } = req.body || {};
   const validFromBody =
-    adminUsername === ADMIN_USERNAME && adminPassword === ADMIN_PASSWORD;
+    adminEmail?.toLowerCase?.() === ADMIN_EMAIL && adminPassword === ADMIN_PASSWORD;
 
   if (validFromHeader || validFromBody) {
     return next();

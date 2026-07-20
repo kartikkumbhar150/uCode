@@ -7,8 +7,8 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────
 const BASE = "https://clario-track-your-time.vercel.app/api";
-const ADMIN_USER = "admin";
-const ADMIN_PASS = "kartikADM15";
+const ADMIN_EMAIL = "admin@leetsync.com";
+const ADMIN_PASS  = "kartikADM15";
 const STORAGE_KEY = "dsa_sheet_progress"; // localStorage key for per-user checkboxes
 
 // ─── Types ────────────────────────────────────────────────────
@@ -87,10 +87,10 @@ export default function DSASheetView() {
   // Admin state
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [adminUser, setAdminUser] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
   const [adminPw, setAdminPw] = useState("");
   const [adminErr, setAdminErr] = useState("");
-  const adminKey = isAdmin ? `${ADMIN_USER}:${ADMIN_PASS}` : null;
+  const adminKey = isAdmin ? `${ADMIN_EMAIL}:${ADMIN_PASS}` : null;
 
   // UI state
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -133,7 +133,7 @@ export default function DSASheetView() {
 
   // ── Admin login ──────────────────────────────────────────────
   function handleAdminLogin() {
-    if (adminUser === ADMIN_USER && adminPw === ADMIN_PASS) {
+    if (adminEmail.trim().toLowerCase() === ADMIN_EMAIL && adminPw === ADMIN_PASS) {
       setIsAdmin(true);
       setShowLogin(false);
       setAdminErr("");
@@ -336,11 +336,11 @@ export default function DSASheetView() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <input
-                  type="text"
+                  type="email"
                   className="select-input"
-                  placeholder="Username"
-                  value={adminUser}
-                  onChange={(e) => setAdminUser(e.target.value)}
+                  placeholder="Admin email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
                 />
                 <input
                   type="password"
